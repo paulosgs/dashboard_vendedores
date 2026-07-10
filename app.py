@@ -904,10 +904,10 @@ with tab2:
             barmode="group",
             title="Meta x Troca dos RCAs Mais Críticos",
             text_auto=".2s",
-            color_discrete_map={{
+            color_discrete_map={
                 "META TROCA": AZUL_NEON,
                 "TROCAS TV11": AMARELO
-            }}
+            }
         )
         fig_meta_x_troca = estilo_plotly(fig_meta_x_troca)
         fig_meta_x_troca.update_layout(
@@ -988,9 +988,9 @@ with tab3:
         "VENDAS"
     ]].copy()
 
-    quadro_sup_exibir = quadro_sup_exibir.rename(columns={{
+    quadro_sup_exibir = quadro_sup_exibir.rename(columns={
         "PENALIDADE_VALOR": "PENALIDADE"
-    }})
+    })
 
     quadro_sup_exibir["PENALIDADE"] = quadro_sup_exibir["PENALIDADE"].apply(formatar_moeda)
     quadro_sup_exibir["% PENALIDADE SOBRE VENDA"] = quadro_sup_exibir["% PENALIDADE SOBRE VENDA"].apply(formatar_percentual)
@@ -1034,10 +1034,10 @@ with tab4:
         "TEM PENALIDADE"
     ]].copy()
 
-    tabela = tabela.rename(columns={{
+    tabela = tabela.rename(columns={
         "PENALIDADE_VALOR": "PENALIDADE",
         "DEV. C/ PENALIDADE ORIGINAL": "PENALIDADE ORIGINAL"
-    }})
+    })
 
     tabela = tabela.sort_values("PENALIDADE", ascending=False)
     tabela_export = tabela.copy()

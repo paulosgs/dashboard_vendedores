@@ -47,19 +47,32 @@ COLUNAS = {
 # =========================================================
 
 @st.cache_data(show_spinner=False)
-
 def carregar_dados(arquivo):
 
     df = pd.read_excel(arquivo)
 
+    # Padroniza os nomes das colunas
     df = padronizar_colunas(df)
 
+    # Remove colunas duplicadas após a padronização
+    if df.columns.duplicated().any():
+
+        st.warning("Foram encontradas colunas duplicadas na planilha. Mantendo apenas a primeira ocorrência.")
+
+        st.write("Colunas duplicadas:", df.columns[df.columns.duplicated()].tolist())
+
+        df = df.loc[:, ~df.columns.duplicated()]
+
+    # Validação
     validar_colunas(df)
 
+    # Tratamento
     tratar_nulos(df)
 
+    # Conversão dos campos numéricos
     converter_numericos(df)
 
+    # Cria indicadores do dashboard
     criar_indicadores(df)
 
     return df

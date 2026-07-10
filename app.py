@@ -19,11 +19,8 @@ st.set_page_config(
 FUNDO = "#05070D"
 CARD = "#0B1120"
 CARD_2 = "#0F172A"
-BORDAS = "#172033"
 AZUL_NEON = "#00C2FF"
 AZUL_NEON_2 = "#007BFF"
-AZUL_GRAFICO = "#00B8FF"
-AZUL_GRAFICO_2 = "#1D4ED8"
 VERDE = "#00D084"
 VERMELHO = "#FF4D6D"
 AMARELO = "#FDBE2D"
@@ -32,7 +29,7 @@ CINZA = "#94A3B8"
 
 # ==========================================================
 # CSS
-# Mantive o menu do Streamlit para não sumir os 3 pontinhos
+# Mantendo MENU e SIDEBAR visíveis
 # ==========================================================
 st.markdown(f"""
 <style>
@@ -52,11 +49,11 @@ st.markdown(f"""
         max-width: 98%;
     }}
 
+    /* Mantém menu e header visíveis */
     footer {{visibility: hidden;}}
-    header {{visibility: hidden;}}
-    
+
     section[data-testid="stSidebar"] {{
-        background: linear-gradient(180deg, #070B14 0%, #0C1220 50%);
+        background: linear-gradient(180deg, #070B14 0%, #0C1220 100%);
         border-right: 1px solid rgba(0,194,255,0.15);
     }}
 
@@ -68,7 +65,7 @@ st.markdown(f"""
         font-size: 38px;
         font-weight: 900;
         color: {BRANCO};
-        margin-bottom: 30px;
+        margin-bottom: 0px;
         letter-spacing: -0.5px;
     }}
 
@@ -101,8 +98,7 @@ st.markdown(f"""
         border-left: 4px solid {AZUL_NEON};
         border-radius: 16px;
         padding: 18px 18px 14px 18px;
-        box-shadow: 0 0 0 rgba(0,0,0,0),
-                    0 0 24px rgba(0,194,255,0.07);
+        box-shadow: 0 0 24px rgba(0,194,255,0.07);
         min-height: 128px;
     }}
 
@@ -300,9 +296,6 @@ def carregar_dados(uploaded_file=None):
 
     # ======================================================
     # TRATAMENTO DA PENALIDADE
-    # IMPORTANTE:
-    # - ORIGINAL = valor real da planilha
-    # - PENALIDADE_VALOR = valor absoluto para análise/visual
     # ======================================================
     df["DEV. C/ PENALIDADE ORIGINAL"] = df["DEV_C_PENALIDADE"]
     df["PENALIDADE_VALOR"] = df["DEV_C_PENALIDADE"].abs()
@@ -340,7 +333,7 @@ def carregar_dados(uploaded_file=None):
 
     df["TEM PENALIDADE"] = np.where(df["PENALIDADE_VALOR"] > 0, "SIM", "NÃO")
 
-    # Renomear colunas principais
+    # Renomear colunas
     df = df.rename(columns={
         "CODSUPERVISOR": "COD. SUPERVISOR",
         "SUPERVISOR": "SUPERVISOR",
@@ -365,6 +358,16 @@ uploaded_file = st.sidebar.file_uploader(
     "Carregar nova planilha (.xlsx)",
     type=["xlsx"]
 )
+
+col_sb1, col_sb2 = st.sidebar.columns(2)
+
+with col_sb1:
+    if st.button("🔄 Atualizar dashboard", key="atualizar_dashboard"):
+        st.rerun()
+
+with col_sb2:
+    if st.button("🧹 Limpar filtros", key="limpar_filtros"):
+        st.rerun()
 
 if st.sidebar.button("🔄 Limpar cache da base"):
     st.cache_data.clear()
@@ -415,9 +418,6 @@ penalidade_sel = st.sidebar.multiselect(
 if penalidade_sel:
     df_filtrado = df_filtrado[df_filtrado["TEM PENALIDADE"].isin(penalidade_sel)].copy()
 
-if st.sidebar.button("🧹 Limpar filtros"):
-    st.rerun()
-
 st.sidebar.markdown("---")
 st.sidebar.write(f"**Registros filtrados:** {len(df_filtrado)}")
 
@@ -462,7 +462,7 @@ base_vendedor["% PENALIDADE SOBRE VENDA"] = np.where(
 
 base_vendedor["% DEV. GRANDES REDES SOBRE VENDA"] = np.where(
     base_vendedor["VENDAS"] > 0,
-    base_vendedor["DEV. GRANDES REDES"].abs() / base_vendedor["VENDAS"],
+    base_vendedor["DEV. GRANDES REDES"].abs() / df_filtrado.groupby(["SUPERVISOR", "VENDEDOR"], as_index=False)["VENDAS"].sum()["VENDAS"],
     0
 )
 

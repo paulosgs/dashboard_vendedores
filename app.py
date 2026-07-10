@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 # ==========================================================
-# TEMA PRETO + AZUL NEON
+# PALETA
 # ==========================================================
 FUNDO = "#05070D"
 CARD = "#0B1120"
@@ -29,7 +29,6 @@ CINZA = "#94A3B8"
 
 # ==========================================================
 # CSS
-# Mantendo MENU e SIDEBAR visíveis
 # ==========================================================
 st.markdown(f"""
 <style>
@@ -42,14 +41,13 @@ st.markdown(f"""
     }}
 
     .block-container {{
-        padding-top: 4.8rem;
+        padding-top: 5rem;
         padding-bottom: 1rem;
         padding-left: 1.8rem;
         padding-right: 1.8rem;
         max-width: 98%;
     }}
 
-    /* Mantém menu e header visíveis */
     footer {{visibility: hidden;}}
 
     section[data-testid="stSidebar"] {{
@@ -140,6 +138,47 @@ st.markdown(f"""
         font-size: 12px;
         color: #9FB3C8;
         margin-top: 8px;
+    }}
+
+    .motivos-box {{
+        background: linear-gradient(180deg, #0B1120 0%, #0F172A 100%);
+        border: 1px solid rgba(0,194,255,0.18);
+        border-left: 4px solid {AMARELO};
+        border-radius: 16px;
+        padding: 16px 18px;
+        margin-top: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 0 18px rgba(0,194,255,0.06);
+    }}
+
+    .motivos-titulo {{
+        font-size: 18px;
+        font-weight: 800;
+        color: {BRANCO};
+        margin-bottom: 12px;
+    }}
+
+    .motivos-grid {{
+        display: grid;
+        grid-template-columns: repeat(2, minmax(260px, 1fr));
+        gap: 8px 20px;
+    }}
+
+    .motivo-item {{
+        font-size: 14px;
+        color: #D9E3F0;
+        line-height: 1.5;
+    }}
+
+    .motivo-codigo {{
+        color: {AZUL_NEON};
+        font-weight: 800;
+    }}
+
+    .motivo-alerta {{
+        font-size: 12px;
+        color: {CINZA};
+        margin-top: 12px;
     }}
 
     .stTabs [data-baseweb="tab-list"] {{
@@ -294,15 +333,11 @@ def carregar_dados(uploaded_file=None):
     df["SUPERVISOR"] = df["SUPERVISOR"].astype(str).str.strip()
     df["RCA"] = df["RCA"].astype(str).str.strip()
 
-    # ======================================================
-    # TRATAMENTO DA PENALIDADE
-    # ======================================================
+    # Penalidade
     df["DEV. C/ PENALIDADE ORIGINAL"] = df["DEV_C_PENALIDADE"]
     df["PENALIDADE_VALOR"] = df["DEV_C_PENALIDADE"].abs()
 
-    # ======================================================
-    # INDICADORES
-    # ======================================================
+    # Indicadores
     df["% META TROCA"] = np.where(df["META_CC"] > 0, df["TV11"] / df["META_CC"], 0)
     df["DESVIO META TROCA"] = df["TV11"] - df["META_CC"]
     df["% TROCA SOBRE VENDA"] = np.where(df["VLVENDA"] > 0, df["TV11"] / df["VLVENDA"], 0)
@@ -462,7 +497,7 @@ base_vendedor["% PENALIDADE SOBRE VENDA"] = np.where(
 
 base_vendedor["% DEV. GRANDES REDES SOBRE VENDA"] = np.where(
     base_vendedor["VENDAS"] > 0,
-    base_vendedor["DEV. GRANDES REDES"].abs() / df_filtrado.groupby(["SUPERVISOR", "VENDEDOR"], as_index=False)["VENDAS"].sum()["VENDAS"],
+    base_vendedor["DEV. GRANDES REDES"].abs() / base_vendedor["VENDAS"],
     0
 )
 
@@ -538,7 +573,7 @@ base_supervisor["TOTAL RCAS"] = (
 )
 
 # ==========================================================
-# KPIs PRINCIPAIS
+# KPIs
 # ==========================================================
 total_penalidade = base_vendedor["PENALIDADE_VALOR"].sum()
 total_vendas = base_vendedor["VENDAS"].sum()
@@ -568,7 +603,40 @@ st.markdown(
 )
 
 # ==========================================================
-# CARDS TOPO
+# QUADRO DE MOTIVOS DE PENALIDADE
+# ==========================================================
+st.markdown("""
+<div class="motivos-box">
+    <div class="motivos-titulo">📌 Motivos de devolução que geram penalidade ao vendedor</div>
+
+    <div class="motivos-grid">
+        <div class="motivo-item"><span class="motivo-codigo">6</span> — Pedido Duplicado</div>
+        <div class="motivo-item"><span class="motivo-codigo">7</span> — Cliente não Pediu Mercadoria</div>
+
+        <div class="motivo-item"><span class="motivo-codigo">11</span> — Desacordo (Preço/F. de pagamento)</div>
+        <div class="motivo-item"><span class="motivo-codigo">28</span> — Desacordo com o Pedido</div>
+
+        <div class="motivo-item"><span class="motivo-codigo">88</span> — Desacordo (Falta troca)</div>
+        <div class="motivo-item"><span class="motivo-codigo">104</span> — Desacordo (Brinde/Bonificação)</div>
+
+        <div class="motivo-item"><span class="motivo-codigo">105</span> — Cliente sem pedido</div>
+        <div class="motivo-item"><span class="motivo-codigo">106</span> — Desacordo (Acordo Comercial)</div>
+
+        <div class="motivo-item"><span class="motivo-codigo">127</span> — Produto Incorreto</div>
+        <div class="motivo-item"><span class="motivo-codigo">129</span> — Erro no código do cliente</div>
+
+        <div class="motivo-item"><span class="motivo-codigo">180</span> — Desacordo</div>
+        <div class="motivo-item"><span class="motivo-codigo">194</span> — Refatura - Vendas</div>
+    </div>
+
+    <div class="motivo-alerta">
+        Quadro de referência dos motivos que geram desconto/penalidade ao vendedor. Esta informação é fixa no cabeçalho e não depende da planilha.
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ==========================================================
+# CARDS
 # ==========================================================
 st.markdown('<div class="secao-titulo">Resumo Executivo</div>', unsafe_allow_html=True)
 
@@ -609,7 +677,7 @@ with c4:
 
 with c5:
     criar_card(
-        "Meta Total de Troca",
+        "Meta Total de Troca (TV11)",
         formatar_moeda(meta_troca_total),
         "Soma das metas de troca dos RCAs",
         tipo="neutro"
@@ -617,7 +685,7 @@ with c5:
 
 with c6:
     criar_card(
-        "Troca Realizada",
+        "Troca Realizada (TV11)",
         formatar_moeda(troca_realizada_total),
         "Total de TV11 no filtro aplicado",
         tipo="neutro"
@@ -734,8 +802,7 @@ with tab1:
         st.plotly_chart(fig_sup_pen, use_container_width=True)
 
     with col4:
-        quadro_pen_sup = base_supervisor.copy()
-        quadro_pen_sup = quadro_pen_sup.sort_values("PENALIDADE_VALOR", ascending=False)
+        quadro_pen_sup = base_supervisor.copy().sort_values("PENALIDADE_VALOR", ascending=False)
 
         quadro_pen_sup_exibir = quadro_pen_sup[[
             "SUPERVISOR",
@@ -930,8 +997,7 @@ with tab3:
     st.markdown("")
     st.markdown('<div class="subsecao-titulo">Quadro Executivo por Supervisor</div>', unsafe_allow_html=True)
 
-    quadro_sup = base_supervisor.copy()
-    quadro_sup = quadro_sup.sort_values("PENALIDADE_VALOR", ascending=False)
+    quadro_sup = base_supervisor.copy().sort_values("PENALIDADE_VALOR", ascending=False)
 
     quadro_sup_exibir = quadro_sup[[
         "SUPERVISOR",

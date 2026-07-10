@@ -41,14 +41,16 @@ st.markdown(f"""
     }}
 
     .block-container {{
-        padding-top: 5rem;
+        padding-top: 5.2rem;
         padding-bottom: 1rem;
         padding-left: 1.8rem;
         padding-right: 1.8rem;
         max-width: 98%;
     }}
 
-    footer {{visibility: hidden;}}
+    footer {{
+        visibility: hidden;
+    }}
 
     section[data-testid="stSidebar"] {{
         background: linear-gradient(180deg, #070B14 0%, #0C1220 100%);
@@ -140,45 +142,15 @@ st.markdown(f"""
         margin-top: 8px;
     }}
 
-    .motivos-box {{
+    .caixa-info {{
         background: linear-gradient(180deg, #0B1120 0%, #0F172A 100%);
         border: 1px solid rgba(0,194,255,0.18);
         border-left: 4px solid {AMARELO};
-        border-radius: 16px;
-        padding: 16px 18px;
-        margin-top: 10px;
-        margin-bottom: 20px;
-        box-shadow: 0 0 18px rgba(0,194,255,0.06);
-    }}
-
-    .motivos-titulo {{
-        font-size: 18px;
-        font-weight: 800;
-        color: {BRANCO};
-        margin-bottom: 12px;
-    }}
-
-    .motivos-grid {{
-        display: grid;
-        grid-template-columns: repeat(2, minmax(260px, 1fr));
-        gap: 8px 20px;
-    }}
-
-    .motivo-item {{
-        font-size: 14px;
+        border-radius: 14px;
+        padding: 12px 14px;
         color: #D9E3F0;
-        line-height: 1.5;
-    }}
-
-    .motivo-codigo {{
-        color: {AZUL_NEON};
-        font-weight: 800;
-    }}
-
-    .motivo-alerta {{
-        font-size: 12px;
-        color: {CINZA};
-        margin-top: 12px;
+        font-size: 14px;
+        margin-bottom: 10px;
     }}
 
     .stTabs [data-baseweb="tab-list"] {{
@@ -603,37 +575,40 @@ st.markdown(
 )
 
 # ==========================================================
-# QUADRO DE MOTIVOS DE PENALIDADE
+# QUADRO DE MOTIVOS DE PENALIDADE - VERSÃO CORRIGIDA
 # ==========================================================
-st.markdown("""
-<div class="motivos-box">
-    <div class="motivos-titulo">📌 Motivos de devolução que geram penalidade ao vendedor</div>
+with st.expander("📌 Motivos de devolução que geram penalidade ao vendedor", expanded=False):
+    st.markdown(
+        """
+        <div class="caixa-info">
+            Quadro de referência dos motivos que geram desconto/penalidade ao vendedor.
+            Esta informação é fixa no cabeçalho e não depende da planilha.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-    <div class="motivos-grid">
-        <div class="motivo-item"><span class="motivo-codigo">6</span> — Pedido Duplicado</div>
-        <div class="motivo-item"><span class="motivo-codigo">7</span> — Cliente não Pediu Mercadoria</div>
+    col_m1, col_m2 = st.columns(2)
 
-        <div class="motivo-item"><span class="motivo-codigo">11</span> — Desacordo (Preço/F. de pagamento)</div>
-        <div class="motivo-item"><span class="motivo-codigo">28</span> — Desacordo com o Pedido</div>
+    with col_m1:
+        st.markdown("""
+**6** — Pedido Duplicado  
+**7** — Cliente não Pediu Mercadoria  
+**11** — Desacordo (Preço/F. de pagamento)  
+**28** — Desacordo com o Pedido  
+**88** — Desacordo (Falta troca)  
+**104** — Desacordo (Brinde/Bonificação)  
+""")
 
-        <div class="motivo-item"><span class="motivo-codigo">88</span> — Desacordo (Falta troca)</div>
-        <div class="motivo-item"><span class="motivo-codigo">104</span> — Desacordo (Brinde/Bonificação)</div>
-
-        <div class="motivo-item"><span class="motivo-codigo">105</span> — Cliente sem pedido</div>
-        <div class="motivo-item"><span class="motivo-codigo">106</span> — Desacordo (Acordo Comercial)</div>
-
-        <div class="motivo-item"><span class="motivo-codigo">127</span> — Produto Incorreto</div>
-        <div class="motivo-item"><span class="motivo-codigo">129</span> — Erro no código do cliente</div>
-
-        <div class="motivo-item"><span class="motivo-codigo">180</span> — Desacordo</div>
-        <div class="motivo-item"><span class="motivo-codigo">194</span> — Refatura - Vendas</div>
-    </div>
-
-    <div class="motivo-alerta">
-        Quadro de referência dos motivos que geram desconto/penalidade ao vendedor. Esta informação é fixa no cabeçalho e não depende da planilha.
-    </div>
-</div>
-""", unsafe_allow_html=True)
+    with col_m2:
+        st.markdown("""
+**105** — Cliente sem pedido  
+**106** — Desacordo (Acordo Comercial)  
+**127** — Produto Incorreto  
+**129** — Erro no código do cliente  
+**180** — Desacordo  
+**194** — Refatura - Vendas  
+""")
 
 # ==========================================================
 # CARDS
@@ -677,7 +652,7 @@ with c4:
 
 with c5:
     criar_card(
-        "Meta Total de Troca (TV11)",
+        "Meta Total de Troca",
         formatar_moeda(meta_troca_total),
         "Soma das metas de troca dos RCAs",
         tipo="neutro"
@@ -685,7 +660,7 @@ with c5:
 
 with c6:
     criar_card(
-        "Troca Realizada (TV11)",
+        "Troca Realizada",
         formatar_moeda(troca_realizada_total),
         "Total de TV11 no filtro aplicado",
         tipo="neutro"
@@ -929,10 +904,10 @@ with tab2:
             barmode="group",
             title="Meta x Troca dos RCAs Mais Críticos",
             text_auto=".2s",
-            color_discrete_map={
+            color_discrete_map={{
                 "META TROCA": AZUL_NEON,
                 "TROCAS TV11": AMARELO
-            }
+            }}
         )
         fig_meta_x_troca = estilo_plotly(fig_meta_x_troca)
         fig_meta_x_troca.update_layout(
@@ -1013,9 +988,9 @@ with tab3:
         "VENDAS"
     ]].copy()
 
-    quadro_sup_exibir = quadro_sup_exibir.rename(columns={
+    quadro_sup_exibir = quadro_sup_exibir.rename(columns={{
         "PENALIDADE_VALOR": "PENALIDADE"
-    })
+    }})
 
     quadro_sup_exibir["PENALIDADE"] = quadro_sup_exibir["PENALIDADE"].apply(formatar_moeda)
     quadro_sup_exibir["% PENALIDADE SOBRE VENDA"] = quadro_sup_exibir["% PENALIDADE SOBRE VENDA"].apply(formatar_percentual)
@@ -1059,10 +1034,10 @@ with tab4:
         "TEM PENALIDADE"
     ]].copy()
 
-    tabela = tabela.rename(columns={
+    tabela = tabela.rename(columns={{
         "PENALIDADE_VALOR": "PENALIDADE",
         "DEV. C/ PENALIDADE ORIGINAL": "PENALIDADE ORIGINAL"
-    })
+    }})
 
     tabela = tabela.sort_values("PENALIDADE", ascending=False)
     tabela_export = tabela.copy()

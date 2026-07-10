@@ -652,7 +652,7 @@ with c4:
 
 with c5:
     criar_card(
-        "Meta Total de Troca",
+        "Meta Total de Troca (TV11)",
         formatar_moeda(meta_troca_total),
         "Soma das metas de troca dos RCAs",
         tipo="neutro"
@@ -660,7 +660,7 @@ with c5:
 
 with c6:
     criar_card(
-        "Troca Realizada",
+        "Troca Realizada (TV11)",
         formatar_moeda(troca_realizada_total),
         "Total de TV11 no filtro aplicado",
         tipo="neutro"
@@ -668,7 +668,7 @@ with c6:
 
 with c7:
     criar_card(
-        "% Meta de Troca",
+        "% Meta de Troca (TV11)",
         formatar_percentual(perc_meta_troca),
         "Troca realizada / meta de troca",
         tipo="alerta" if perc_meta_troca > 1 else "ok"
@@ -676,7 +676,7 @@ with c7:
 
 with c8:
     criar_card(
-        "RCAs Acima da Meta",
+        "RCAs Acima da Meta (TV11)",
         str(qtd_acima_meta),
         "Quantidade de vendedores acima da meta de troca",
         tipo="alerta" if qtd_acima_meta > 0 else "ok"

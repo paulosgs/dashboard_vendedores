@@ -42,7 +42,7 @@ st.markdown(f"""
     }}
 
     .block-container {{
-        padding-top: 1rem;
+        padding-top: 4.8rem;
         padding-bottom: 1rem;
         padding-left: 1.8rem;
         padding-right: 1.8rem;

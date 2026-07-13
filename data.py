@@ -818,19 +818,23 @@ def tabela_penalidades(base_rca):
 
 
 # =========================================================
-# RCAS ACIMA DA META
+# RCAs ACIMA DA META
 # =========================================================
 
 def tabela_acima_meta(base_rca):
 
     tabela = (
+
         base_rca
+        .loc[
+            base_rca["STATUS TROCA"] == "ACIMA DA META"
+        ]
         .copy()
-        .query("STATUS TROCA == 'ACIMA DA META'")
         .sort_values(
             "DESVIO META TROCA",
             ascending=False
         )
+
     )
 
     return tabela

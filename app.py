@@ -47,6 +47,10 @@ st.set_page_config(
 # ==========================================================
 
 carregar_css()
+st.markdown(
+"<h1 style='color:red'>TESTE HTML</h1>",
+unsafe_allow_html=True
+)
 
 # ==========================================================
 # CABEÇALHO

@@ -225,15 +225,37 @@ def converter_numericos(df):
 
     ]
 
+    def converter_numericos(df):
+
+        numericas = [
+
+            COLUNAS["META"],
+            COLUNAS["META_TROCA"],
+            COLUNAS["VENDAS"],
+            COLUNAS["TV11"],
+            COLUNAS["TV5"],
+            COLUNAS["PENALIDADE"],
+            COLUNAS["GRANDES_REDES"],
+            COLUNAS["ACIMA_TABELA"],
+            COLUNAS["CC_REAL"]
+
+    ]
+
     for coluna in numericas:
 
-        df[coluna] = pd.to_numeric(
+        if coluna in df.columns:
 
-            df[coluna],
+            serie = df[coluna]
 
-            errors="coerce"
+            if isinstance(serie, pd.DataFrame):
+                serie = serie.iloc[:, 0]
 
-        ).fillna(0)
+            df[coluna] = (
+                pd.to_numeric(
+                    serie,
+                    errors="coerce"
+                ).fillna(0)
+            )
 
 
 # =========================================================
@@ -537,27 +559,30 @@ def resumo_supervisor(df):
 
     )
 
-    base["RCAS"] = (
+    rcas = (
+    df.groupby("SUPERVISOR")["VENDEDOR"]
+      .nunique()
+      .rename("RCAS")
+)
 
-        df.groupby("SUPERVISOR")["VENDEDOR"]
+    base = base.merge(
+    rcas,
+    on="SUPERVISOR",
+    how="left"
+)
 
-        .nunique()
+    pen = (
+    resumo_rca(df)
+    .groupby("SUPERVISOR")["TEM PENALIDADE"]
+    .apply(lambda x: (x == "SIM").sum())
+    .rename("RCAS COM PENALIDADE")
+)
 
-        .values
-
-    )
-
-    base["RCAS COM PENALIDADE"] = (
-
-        resumo_rca(df)
-
-        .groupby("SUPERVISOR")["TEM PENALIDADE"]
-
-        .apply(lambda x:(x=="SIM").sum())
-
-        .values
-
-    )
+    base = base.merge(
+    pen,
+    on="SUPERVISOR",
+    how="left"
+)
 
     return base
 
@@ -673,7 +698,7 @@ def ranking_percentual_penalidade(base_rca, top=20):
     ranking = (
         base_rca
         .copy()
-        .query("VENDAS > 0")
+        .loc[base_rca["VENDAS"] > 0]
         .sort_values(
             "% PENALIDADE SOBRE VENDA",
             ascending=False
@@ -712,7 +737,7 @@ def ranking_meta_troca(base_rca, top=20):
     ranking = (
         base_rca
         .copy()
-        .query("`META TROCA` > 0")
+        .loc[base_rca["META TROCA"] > 0]
         .sort_values(
             "% META TROCA",
             ascending=False
@@ -807,7 +832,7 @@ def tabela_penalidades(base_rca):
     tabela = (
         base_rca
         .copy()
-        .query("PENALIDADE_VALOR > 0")
+        .loc[base_rca["PENALIDADE_VALOR"] > 0]
         .sort_values(
             "PENALIDADE_VALOR",
             ascending=False
@@ -956,7 +981,7 @@ def tabela_descontos(base_rca):
 
         base_rca
         .copy()
-        .query("PENALIDADE_VALOR > 0")
+        .loc[base_rca["PENALIDADE_VALOR"] > 0]
         .sort_values(
             "PENALIDADE_VALOR",
             ascending=False
@@ -979,11 +1004,12 @@ def resumo_faixas(base_rca):
 
         .groupby(
 
-            "FAIXA PENALIDADE",
+        "FAIXA PENALIDADE",
 
-            as_index=False
+        as_index=False,
 
-        )
+        observed=False
+)
 
         .agg({
 
@@ -1020,7 +1046,9 @@ def resumo_meta(base_rca):
 
             "STATUS TROCA",
 
-            as_index=False
+            as_index=False,
+
+            observed=False
 
         )
 

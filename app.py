@@ -3,7 +3,7 @@ import pandas as pd
 import io
 
 # ==========================================================
-# IMPORTAÇÕES DO PROJETO
+# IMPORTAÇÕES
 # ==========================================================
 
 from data import (
@@ -20,26 +20,21 @@ from data import (
     tabela_analitica
 )
 
-from styles import carregar_css
-
 from componentes import *
 
 from graficos import *
+
+from styles import carregar_css
 
 # ==========================================================
 # CONFIGURAÇÃO DA PÁGINA
 # ==========================================================
 
 st.set_page_config(
-
     page_title="Dashboard Executivo de Penalidades",
-
     page_icon="📊",
-
     layout="wide",
-
     initial_sidebar_state="expanded"
-
 )
 
 # ==========================================================
@@ -61,14 +56,11 @@ cabecalho_dashboard()
 with st.sidebar:
 
     try:
-
         st.image(
             "assets/logo.png",
             use_container_width=True
         )
-
     except:
-
         pass
 
     st.markdown("---")
@@ -76,15 +68,12 @@ with st.sidebar:
     st.subheader("📂 Base de Dados")
 
     arquivo = st.file_uploader(
-
         "Selecione a planilha",
-
         type=["xlsx"]
-
     )
 
 # ==========================================================
-# AGUARDA O UPLOAD
+# AGUARDA UPLOAD
 # ==========================================================
 
 if arquivo is None:
@@ -96,7 +85,7 @@ if arquivo is None:
     st.stop()
 
 # ==========================================================
-# CARREGA DADOS
+# CARREGA BASES
 # ==========================================================
 
 bases = carregar_bases(arquivo)
@@ -115,86 +104,67 @@ with st.sidebar:
 
     st.subheader("🎯 Filtros")
 
-    # ------------------------------
-    # SUPERVISOR
-    # ------------------------------
-
-    lista_supervisores = sorted(
-
-        base_rca["SUPERVISOR"].dropna().unique()
-
+    supervisores = sorted(
+        base_rca["SUPERVISOR"]
+        .dropna()
+        .unique()
     )
 
     supervisor = st.multiselect(
-
         "Supervisor",
-
-        options=lista_supervisores,
-
-        default=lista_supervisores
-
+        supervisores,
+        default=supervisores
     )
 
-    # ------------------------------
-    # VENDEDOR
-    # ------------------------------
-
-    lista_vendedores = sorted(
-
+    vendedores = sorted(
         base_rca.loc[
-
             base_rca["SUPERVISOR"].isin(supervisor),
-
             "VENDEDOR"
-
-        ].dropna().unique()
-
+        ]
+        .dropna()
+        .unique()
     )
 
     vendedor = st.multiselect(
-
         "Vendedor",
-
-        options=lista_vendedores,
-
-        default=lista_vendedores
-
+        vendedores,
+        default=vendedores
     )
-
-# ==========================================================
+    # ==========================================================
 # APLICA FILTROS
 # ==========================================================
 
 base_rca = base_rca.loc[
-
     (base_rca["SUPERVISOR"].isin(supervisor))
-
     &
-
     (base_rca["VENDEDOR"].isin(vendedor))
-
 ].copy()
 
 base_supervisor = base_supervisor.loc[
-
     base_supervisor["SUPERVISOR"].isin(supervisor)
-
 ].copy()
 
 # ==========================================================
-# RECALCULA TODOS OS DADOS
-# (A PARTIR DA BASE FILTRADA)
+# CASO NÃO EXISTA DADOS
 # ==========================================================
 
-# ------------------------------
-# KPIs
-# ------------------------------
+if base_rca.empty:
+
+    st.warning(
+        "Nenhum registro encontrado para os filtros selecionados."
+    )
+
+    st.stop()
+
+# ==========================================================
+# KPI's
+# ==========================================================
 
 kpis = indicadores_dashboard(base_rca)
 
-# ------------------------------
-# Rankings
-# ------------------------------
+# ==========================================================
+# RANKINGS
+# ==========================================================
 
 ranking_pen = ranking_penalidade(base_rca)
 
@@ -208,22 +178,41 @@ ranking_redes = ranking_grandes_redes(base_rca)
 
 ranking_bonus = ranking_bonificacao(base_rca)
 
-# ------------------------------
-# Resumos
-# ------------------------------
+# ==========================================================
+# RESUMOS
+# ==========================================================
 
 resumo_faixa = resumo_faixas(base_rca)
 
-# ------------------------------
-# Tabelas
-# ------------------------------
+# ==========================================================
+# TABELAS
+# ==========================================================
 
 analitico = tabela_analitica(base_rca)
 
 descontos = tabela_descontos(base_rca)
 
 # ==========================================================
-# KPI's
+# EXCEL PARA DOWNLOAD
+# ==========================================================
+
+arquivo_excel = io.BytesIO()
+
+with pd.ExcelWriter(
+    arquivo_excel,
+    engine="openpyxl"
+) as writer:
+
+    descontos.to_excel(
+        writer,
+        sheet_name="Descontos",
+        index=False
+    )
+
+arquivo_excel.seek(0)
+
+# ==========================================================
+# KPI's DO TOPO
 # ==========================================================
 
 linha_kpis(kpis)
@@ -235,372 +224,401 @@ linha_kpis2(kpis)
 espaco(2)
 
 # ==========================================================
+# ALERTA EXECUTIVO
+# ==========================================================
+
+alerta_penalidade(base_rca)
+
+# ==========================================================
 # RESUMO EXECUTIVO
 # ==========================================================
 
 resumo_executivo(kpis)
 
-espaco()
-
-# ==========================================================
-# MOTIVOS DE PENALIDADE
-# ==========================================================
-
-quadro_motivos()
-
 espaco(2)
 
 # ==========================================================
-# DASHBOARD EXECUTIVO
+# ABAS PRINCIPAIS
 # ==========================================================
 
-cabecalho_secao(
-
-    "📊 Dashboard Executivo",
-
-    "Acompanhamento das penalidades e indicadores dos vendedores"
-
+(
+    aba_visao,
+    aba_rankings,
+    aba_performance,
+    aba_tabelas,
+    aba_exportacao,
+) = st.tabs(
+    [
+        "📊 Visão Geral",
+        "🏆 Rankings",
+        "📈 Performance",
+        "📋 Tabelas",
+        "📤 Exportação",
+    ]
 )
 
-espaco()
-
 # ==========================================================
+# ABA 1 - VISÃO GERAL
+# ==========================================================
+
+with aba_visao:
+
+    cabecalho_secao(
+        "📊 Visão Geral",
+        "Resumo executivo das penalidades, distribuição e indicadores."
+    )
+
+    espaco()
+
+# ------------------------------------------------------
 # PRIMEIRA LINHA
-# ==========================================================
+# ------------------------------------------------------
 
-col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2)
 
-with col1:
+    with col1:
 
-    st.plotly_chart(
+        st.plotly_chart(
+            grafico_pareto(ranking_pen),
+            use_container_width=True,
+            config={
+                "displaylogo": False,
+                "responsive": True
+            }
+        )
 
-        grafico_penalidade(
+    with col2:
 
-            ranking_pen
+        st.plotly_chart(
+            grafico_supervisor(ranking_super),
+            use_container_width=True,
+            config={
+                "displaylogo": False,
+                "responsive": True
+            }
+        )
 
-        ),
+    espaco()
 
-        use_container_width=True,
-
-        config={
-
-            "displaylogo": False,
-
-            "responsive": True
-
-        }
-
-    )
-
-with col2:
-
-    st.plotly_chart(
-
-        grafico_penalidade_percentual(
-
-            ranking_pct
-
-        ),
-
-        use_container_width=True,
-
-        config={
-
-            "displaylogo": False,
-
-            "responsive": True
-
-        }
-
-    )
-
-espaco()
-
-# ==========================================================
+# ------------------------------------------------------
 # SEGUNDA LINHA
+# ------------------------------------------------------
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        st.plotly_chart(
+            grafico_faixas(resumo_faixa),
+            use_container_width=True,
+            config={
+                "displaylogo": False,
+                "responsive": True
+            }
+        )
+
+    with col2:
+
+        st.plotly_chart(
+            grafico_distribuicao(base_rca),
+            use_container_width=True,
+            config={
+                "displaylogo": False,
+                "responsive": True
+            }
+        )
+
+    espaco(2)
+
+    # ------------------------------------------------------
+    # RESUMO DA BASE
+    # ------------------------------------------------------
+
+    caixa_informacoes(kpis)
+
+    espaco()
+
+    # ------------------------------------------------------
+    # MOTIVOS DAS PENALIDADES
+    # ------------------------------------------------------
+
+    quadro_motivos()
+
+    espaco()
+
+    # ------------------------------------------------------
+    # LEGENDA
+    # ------------------------------------------------------
+
+    legenda_penalidades()
+    # ==========================================================
+# ABA 2 - RANKINGS
 # ==========================================================
 
-col1, col2 = st.columns(2)
+with aba_rankings:
 
-with col1:
+    cabecalho_secao(
+        "🏆 Rankings",
+        "Rankings dos vendedores por indicador."
+    )
+
+    espaco()
+
+    # ------------------------------------------------------
+    # PRIMEIRA LINHA
+    # ------------------------------------------------------
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        st.plotly_chart(
+            grafico_penalidade(ranking_pen),
+            use_container_width=True,
+            config={
+                "displaylogo": False,
+                "responsive": True
+            }
+        )
+
+    with col2:
+
+        st.plotly_chart(
+            grafico_penalidade_percentual(ranking_pct),
+            use_container_width=True,
+            config={
+                "displaylogo": False,
+                "responsive": True
+            }
+        )
+
+    espaco()
+
+    # ------------------------------------------------------
+    # SEGUNDA LINHA
+    # ------------------------------------------------------
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        st.plotly_chart(
+            grafico_troca_meta(ranking_troca),
+            use_container_width=True,
+            config={
+                "displaylogo": False,
+                "responsive": True
+            }
+        )
+
+    with col2:
+
+        st.plotly_chart(
+            grafico_bonificacao(ranking_bonus),
+            use_container_width=True,
+            config={
+                "displaylogo": False,
+                "responsive": True
+            }
+        )
+
+    espaco()
+
+    # ------------------------------------------------------
+    # TERCEIRA LINHA
+    # ------------------------------------------------------
 
     st.plotly_chart(
-
-        grafico_supervisor(
-
-            ranking_super
-
-        ),
-
+        grafico_grandes_redes(ranking_redes),
         use_container_width=True,
-
         config={
-
             "displaylogo": False,
-
             "responsive": True
-
         }
-
     )
 
-with col2:
+# ==========================================================
+# ABA 3 - PERFORMANCE
+# ==========================================================
+
+with aba_performance:
+
+    cabecalho_secao(
+        "📈 Performance Comercial",
+        "Análises consolidadas de desempenho."
+    )
+
+    espaco()
+
+    # ------------------------------------------------------
+    # PRIMEIRA LINHA
+    # ------------------------------------------------------
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        st.plotly_chart(
+            grafico_supervisor(ranking_super),
+            use_container_width=True,
+            config={
+                "displaylogo": False,
+                "responsive": True
+            }
+        )
+
+    with col2:
+
+        st.plotly_chart(
+            grafico_pareto(ranking_pen),
+            use_container_width=True,
+            config={
+                "displaylogo": False,
+                "responsive": True
+            }
+        )
+
+    espaco()
+
+    # ------------------------------------------------------
+    # SEGUNDA LINHA
+    # ------------------------------------------------------
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        st.plotly_chart(
+            grafico_faixas(resumo_faixa),
+            use_container_width=True,
+            config={
+                "displaylogo": False,
+                "responsive": True
+            }
+        )
+
+    with col2:
+
+        st.plotly_chart(
+            grafico_distribuicao(base_rca),
+            use_container_width=True,
+            config={
+                "displaylogo": False,
+                "responsive": True
+            }
+        )
+
+    espaco()
+
+    # ------------------------------------------------------
+    # HEATMAP
+    # ------------------------------------------------------
 
     st.plotly_chart(
-
-        grafico_pareto(
-
-            ranking_pen
-
-        ),
-
+        grafico_heatmap(base_rca),
         use_container_width=True,
-
         config={
-
             "displaylogo": False,
-
             "responsive": True
-
         }
-
     )
 
-espaco()
-
 # ==========================================================
-# TERCEIRA LINHA
+# ABA 4 - TABELAS
 # ==========================================================
 
-col1, col2 = st.columns(2)
+with aba_tabelas:
 
-with col1:
-
-    st.plotly_chart(
-
-        grafico_faixas(
-
-            resumo_faixa
-
-        ),
-
-        use_container_width=True,
-
-        config={
-
-            "displaylogo": False,
-
-            "responsive": True
-
-        }
-
+    cabecalho_secao(
+        "📋 Tabelas Analíticas",
+        "Consultas detalhadas para análise dos indicadores."
     )
 
-with col2:
+    espaco()
 
-    st.plotly_chart(
+    tab1, tab2 = st.tabs([
+        "📊 Analítica",
+        "💰 Financeiro"
+    ])
 
-        grafico_distribuicao(
+    # ------------------------------------------------------
+    # TABELA ANALÍTICA
+    # ------------------------------------------------------
 
-            base_rca
+    with tab1:
 
-        ),
+        st.dataframe(
+            analitico,
+            use_container_width=True,
+            height=650
+        )
 
-        use_container_width=True,
+    # ------------------------------------------------------
+    # TABELA FINANCEIRO
+    # ------------------------------------------------------
 
-        config={
+    with tab2:
 
-            "displaylogo": False,
+        st.dataframe(
+            descontos,
+            use_container_width=True,
+            height=650
+        )
 
-            "responsive": True
+# ==========================================================
+# ABA 5 - EXPORTAÇÃO
+# ==========================================================
 
-        }
+with aba_exportacao:
 
+    cabecalho_secao(
+        "📤 Exportação",
+        "Exportação das informações do Dashboard."
     )
 
-espaco(2)
+    espaco()
 
-# ==========================================================
-# ANÁLISE DE TROCAS
-# ==========================================================
+    col1, col2 = st.columns([2,1])
 
-cabecalho_secao(
+    with col1:
 
-    "🔁 Análise de Trocas",
+        observacao("""
+Utilize este botão para exportar a relação dos vendedores
+com penalidades financeiras para Excel.
 
-    "Acompanhamento da meta de troca, bonificações e grandes redes"
+O arquivo respeita todos os filtros aplicados no Dashboard.
+""")
 
-)
+        espaco()
 
-espaco()
+        botao_download_excel(
+            "Penalidades.xlsx",
+            arquivo_excel.getvalue()
+        )
 
-col1, col2 = st.columns(2)
+    with col2:
 
-# ----------------------------------------------------------
-# TROCA x META
-# ----------------------------------------------------------
+        st.metric(
+            "RCAs",
+            kpis["rcas"]
+        )
 
-with col1:
+        st.metric(
+            "Supervisores",
+            kpis["supervisores"]
+        )
 
-    st.plotly_chart(
-
-        grafico_troca_meta(
-
-            ranking_troca
-
-        ),
-
-        use_container_width=True,
-
-        config={
-
-            "displaylogo": False,
-
-            "responsive": True
-
-        }
-
-    )
-
-# ----------------------------------------------------------
-# BONIFICAÇÕES
-# ----------------------------------------------------------
-
-with col2:
-
-    st.plotly_chart(
-
-        grafico_bonificacao(
-
-            ranking_bonus
-
-        ),
-
-        use_container_width=True,
-
-        config={
-
-            "displaylogo": False,
-
-            "responsive": True
-
-        }
-
-    )
-
-espaco()
-
-# ----------------------------------------------------------
-# GRANDES REDES
-# ----------------------------------------------------------
-
-st.plotly_chart(
-
-    grafico_grandes_redes(
-
-        ranking_redes
-
-    ),
-
-    use_container_width=True,
-
-    config={
-
-        "displaylogo": False,
-
-        "responsive": True
-
-    }
-
-)
-
-espaco(2)
-
-# ==========================================================
-# TABELA ANALÍTICA
-# ==========================================================
-
-cabecalho_secao(
-
-    "📋 Tabela Analítica",
-
-    "Detalhamento dos indicadores por vendedor"
-
-)
-
-st.dataframe(
-
-    analitico,
-
-    use_container_width=True,
-
-    height=500
-
-)
-
-espaco(2)
-
-# ==========================================================
-# FINANCEIRO
-# ==========================================================
-
-cabecalho_secao(
-
-    "💰 Financeiro",
-
-    "Vendedores com desconto por penalidade"
-
-)
-
-st.dataframe(
-
-    descontos,
-
-    use_container_width=True,
-
-    height=500
-
-)
-
-espaco()
-
-# ==========================================================
-# EXPORTAÇÃO
-# ==========================================================
-
-arquivo_excel = io.BytesIO()
-
-with pd.ExcelWriter(
-
-    arquivo_excel,
-
-    engine="openpyxl"
-
-) as writer:
-
-    descontos.to_excel(
-
-        writer,
-
-        sheet_name="Descontos",
-
-        index=False
-
-    )
-
-botao_download_excel(
-
-    "Penalidades.xlsx",
-
-    arquivo_excel.getvalue()
-
-)
-
-espaco(2)
+        st.metric(
+            "RCAs Penalizados",
+            kpis["rcas_penalidade"]
+        )
 
 # ==========================================================
 # RODAPÉ
 # ==========================================================
 
-rodape_dashboard()
+espaco(2)
 
+linha()
+
+rodape_dashboard()

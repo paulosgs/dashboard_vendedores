@@ -1,29 +1,19 @@
+# ==========================================================
+# DASHBOARD EXECUTIVO DE PENALIDADES
+# Distrinorte Distribuidora
+# ==========================================================
+
+import io
 import streamlit as st
 import pandas as pd
-import io
 
 # ==========================================================
-# IMPORTAÇÕES
+# IMPORTAÇÕES DO PROJETO
 # ==========================================================
 
-from data import (
-    carregar_bases,
-    indicadores_dashboard,
-    ranking_penalidade,
-    ranking_percentual_penalidade,
-    ranking_supervisor,
-    ranking_trocas,
-    ranking_grandes_redes,
-    ranking_bonificacao,
-    resumo_faixas,
-    tabela_descontos,
-    tabela_analitica
-)
-
+from data import *
 from componentes import *
-
 from graficos import *
-
 from styles import carregar_css
 
 # ==========================================================
@@ -55,22 +45,14 @@ cabecalho_dashboard()
 
 with st.sidebar:
 
-    try:
-        st.image(
-            "assets/logo.png",
-            use_container_width=True
-        )
-    except:
-        pass
-
-    st.markdown("---")
-
-    st.subheader("📂 Base de Dados")
+    st.markdown("## 📂 Base de Dados")
 
     arquivo = st.file_uploader(
         "Selecione a planilha",
         type=["xlsx"]
     )
+
+    st.markdown("---")
 
 # ==========================================================
 # AGUARDA UPLOAD
@@ -85,10 +67,16 @@ if arquivo is None:
     st.stop()
 
 # ==========================================================
-# CARREGA BASES
+# CARREGAMENTO DAS BASES
 # ==========================================================
 
-bases = carregar_bases(arquivo)
+with st.spinner("Carregando base de dados..."):
+
+    bases = carregar_bases(arquivo)
+
+# ==========================================================
+# BASES
+# ==========================================================
 
 base_rca = bases["base_rca"]
 
@@ -100,14 +88,13 @@ base_supervisor = bases["base_supervisor"]
 
 with st.sidebar:
 
-    st.markdown("---")
-
-    st.subheader("🎯 Filtros")
+    st.markdown("## 🎯 Filtros")
 
     supervisores = sorted(
         base_rca["SUPERVISOR"]
         .dropna()
         .unique()
+        .tolist()
     )
 
     supervisor = st.multiselect(
@@ -117,12 +104,16 @@ with st.sidebar:
     )
 
     vendedores = sorted(
+
         base_rca.loc[
             base_rca["SUPERVISOR"].isin(supervisor),
             "VENDEDOR"
         ]
+
         .dropna()
         .unique()
+        .tolist()
+
     )
 
     vendedor = st.multiselect(
@@ -130,14 +121,19 @@ with st.sidebar:
         vendedores,
         default=vendedores
     )
-    # ==========================================================
+
+# ==========================================================
 # APLICA FILTROS
 # ==========================================================
 
 base_rca = base_rca.loc[
-    (base_rca["SUPERVISOR"].isin(supervisor))
+    (
+        base_rca["SUPERVISOR"].isin(supervisor)
+    )
     &
-    (base_rca["VENDEDOR"].isin(vendedor))
+    (
+        base_rca["VENDEDOR"].isin(vendedor)
+    )
 ].copy()
 
 base_supervisor = base_supervisor.loc[
@@ -145,19 +141,18 @@ base_supervisor = base_supervisor.loc[
 ].copy()
 
 # ==========================================================
-# CASO NÃO EXISTA DADOS
+# SEM DADOS
 # ==========================================================
 
 if base_rca.empty:
 
     st.warning(
-        "Nenhum registro encontrado para os filtros selecionados."
+        "Nenhum dado encontrado para os filtros selecionados."
     )
 
     st.stop()
-
 # ==========================================================
-# KPI's
+# KPI'S
 # ==========================================================
 
 kpis = indicadores_dashboard(base_rca)
@@ -184,16 +179,20 @@ ranking_bonus = ranking_bonificacao(base_rca)
 
 resumo_faixa = resumo_faixas(base_rca)
 
+resumo = resumo_executivo(base_rca)
+
 # ==========================================================
 # TABELAS
 # ==========================================================
 
-analitico = tabela_analitica(base_rca)
+tabela_geral = tabela_analitica(base_rca)
 
-descontos = tabela_descontos(base_rca)
+tabela_financeira = tabela_descontos(base_rca)
+
+tabela_meta = tabela_acima_meta(base_rca)
 
 # ==========================================================
-# EXCEL PARA DOWNLOAD
+# EXCEL
 # ==========================================================
 
 arquivo_excel = io.BytesIO()
@@ -203,16 +202,28 @@ with pd.ExcelWriter(
     engine="openpyxl"
 ) as writer:
 
-    descontos.to_excel(
+    tabela_financeira.to_excel(
         writer,
-        sheet_name="Descontos",
+        sheet_name="Financeiro",
+        index=False
+    )
+
+    tabela_geral.to_excel(
+        writer,
+        sheet_name="Analitica",
+        index=False
+    )
+
+    tabela_meta.to_excel(
+        writer,
+        sheet_name="Meta",
         index=False
     )
 
 arquivo_excel.seek(0)
 
 # ==========================================================
-# KPI's DO TOPO
+# CABEÇALHO
 # ==========================================================
 
 linha_kpis(kpis)
@@ -221,42 +232,43 @@ espaco()
 
 linha_kpis2(kpis)
 
-espaco(2)
-
-# ==========================================================
-# ALERTA EXECUTIVO
-# ==========================================================
+espaco()
 
 alerta_penalidade(base_rca)
 
-# ==========================================================
-# RESUMO EXECUTIVO
-# ==========================================================
+espaco()
 
 resumo_executivo(kpis)
 
 espaco(2)
 
 # ==========================================================
-# ABAS PRINCIPAIS
+# ABAS
 # ==========================================================
 
 (
     aba_visao,
     aba_rankings,
-    aba_performance,
+    aba_supervisores,
     aba_tabelas,
-    aba_exportacao,
+    aba_exportacao
 ) = st.tabs(
-    [
-        "📊 Visão Geral",
-        "🏆 Rankings",
-        "📈 Performance",
-        "📋 Tabelas",
-        "📤 Exportação",
-    ]
-)
 
+    [
+
+        "📊 Visão Geral",
+
+        "🏆 Rankings",
+
+        "👨‍💼 Supervisores",
+
+        "📋 Tabelas",
+
+        "📤 Exportação"
+
+    ]
+
+)
 # ==========================================================
 # ABA 1 - VISÃO GERAL
 # ==========================================================
@@ -265,14 +277,14 @@ with aba_visao:
 
     cabecalho_secao(
         "📊 Visão Geral",
-        "Resumo executivo das penalidades, distribuição e indicadores."
+        "Resumo executivo das penalidades da equipe comercial."
     )
 
     espaco()
 
-# ------------------------------------------------------
-# PRIMEIRA LINHA
-# ------------------------------------------------------
+    # ======================================================
+    # PRIMEIRA LINHA
+    # ======================================================
 
     col1, col2 = st.columns(2)
 
@@ -281,92 +293,81 @@ with aba_visao:
         st.plotly_chart(
             grafico_pareto(ranking_pen),
             use_container_width=True,
-            config={
-                "displaylogo": False,
-                "responsive": True
-            }
+            key="pareto_visao"
         )
 
     with col2:
 
         st.plotly_chart(
-            grafico_supervisor(ranking_super),
+            grafico_faixas(resumo_faixa),
             use_container_width=True,
-            config={
-                "displaylogo": False,
-                "responsive": True
-            }
+            key="faixas_visao"
         )
 
     espaco()
 
-# ------------------------------------------------------
-# SEGUNDA LINHA
-# ------------------------------------------------------
+    # ======================================================
+    # SEGUNDA LINHA
+    # ======================================================
 
     col1, col2 = st.columns(2)
 
     with col1:
 
         st.plotly_chart(
-            grafico_faixas(resumo_faixa),
+            grafico_distribuicao(base_rca),
             use_container_width=True,
-            config={
-                "displaylogo": False,
-                "responsive": True
-            }
+            key="distribuicao_visao"
         )
 
     with col2:
 
         st.plotly_chart(
-            grafico_distribuicao(base_rca),
+            grafico_heatmap(base_rca),
             use_container_width=True,
-            config={
-                "displaylogo": False,
-                "responsive": True
-            }
+            key="heatmap_visao"
         )
 
     espaco(2)
 
-    # ------------------------------------------------------
-    # RESUMO DA BASE
-    # ------------------------------------------------------
+    # ======================================================
+    # RESUMO EXECUTIVO
+    # ======================================================
 
     caixa_informacoes(kpis)
 
     espaco()
 
-    # ------------------------------------------------------
+    resumo_executivo(kpis)
+
+    espaco()
+
+    # ======================================================
     # MOTIVOS DAS PENALIDADES
-    # ------------------------------------------------------
+    # ======================================================
 
     quadro_motivos()
 
     espaco()
 
-    # ------------------------------------------------------
-    # LEGENDA
-    # ------------------------------------------------------
-
     legenda_penalidades()
-    # ==========================================================
+
+# ==========================================================
 # ABA 2 - RANKINGS
 # ==========================================================
 
 with aba_rankings:
 
     cabecalho_secao(
-        "🏆 Rankings",
-        "Rankings dos vendedores por indicador."
+        "🏆 Rankings dos RCAs",
+        "Comparativo dos vendedores por penalidade, trocas, bonificações e devoluções."
     )
 
     espaco()
 
-    # ------------------------------------------------------
+    # ======================================================
     # PRIMEIRA LINHA
-    # ------------------------------------------------------
+    # ======================================================
 
     col1, col2 = st.columns(2)
 
@@ -375,10 +376,7 @@ with aba_rankings:
         st.plotly_chart(
             grafico_penalidade(ranking_pen),
             use_container_width=True,
-            config={
-                "displaylogo": False,
-                "responsive": True
-            }
+            key="ranking_penalidade"
         )
 
     with col2:
@@ -386,17 +384,14 @@ with aba_rankings:
         st.plotly_chart(
             grafico_penalidade_percentual(ranking_pct),
             use_container_width=True,
-            config={
-                "displaylogo": False,
-                "responsive": True
-            }
+            key="ranking_percentual"
         )
 
-    espaco()
+    espaco(2)
 
-    # ------------------------------------------------------
+    # ======================================================
     # SEGUNDA LINHA
-    # ------------------------------------------------------
+    # ======================================================
 
     col1, col2 = st.columns(2)
 
@@ -405,10 +400,7 @@ with aba_rankings:
         st.plotly_chart(
             grafico_troca_meta(ranking_troca),
             use_container_width=True,
-            config={
-                "displaylogo": False,
-                "responsive": True
-            }
+            key="ranking_troca"
         )
 
     with col2:
@@ -416,113 +408,106 @@ with aba_rankings:
         st.plotly_chart(
             grafico_bonificacao(ranking_bonus),
             use_container_width=True,
-            config={
-                "displaylogo": False,
-                "responsive": True
-            }
+            key="ranking_bonificacao"
         )
 
-    espaco()
+    espaco(2)
 
-    # ------------------------------------------------------
+    # ======================================================
     # TERCEIRA LINHA
-    # ------------------------------------------------------
+    # ======================================================
 
     st.plotly_chart(
         grafico_grandes_redes(ranking_redes),
         use_container_width=True,
-        config={
-            "displaylogo": False,
-            "responsive": True
-        }
+        key="ranking_grandes_redes"
     )
 
+    espaco()
+
+    observacao(
+        """
+        Os rankings apresentam os 20 RCAs com maior impacto financeiro em cada indicador,
+        respeitando os filtros aplicados na barra lateral.
+        """
+    )
 # ==========================================================
-# ABA 3 - PERFORMANCE
+# ABA 3 - SUPERVISORES
 # ==========================================================
 
-with aba_performance:
+with aba_supervisores:
 
     cabecalho_secao(
-        "📈 Performance Comercial",
-        "Análises consolidadas de desempenho."
+        "👨‍💼 Supervisores",
+        "Análise consolidada das penalidades por supervisor."
     )
 
     espaco()
 
-    # ------------------------------------------------------
-    # PRIMEIRA LINHA
-    # ------------------------------------------------------
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-
-        st.plotly_chart(
-            grafico_supervisor(ranking_super),
-            use_container_width=True,
-            config={
-                "displaylogo": False,
-                "responsive": True
-            }
-        )
-
-    with col2:
-
-        st.plotly_chart(
-            grafico_pareto(ranking_pen),
-            use_container_width=True,
-            config={
-                "displaylogo": False,
-                "responsive": True
-            }
-        )
-
-    espaco()
-
-    # ------------------------------------------------------
-    # SEGUNDA LINHA
-    # ------------------------------------------------------
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-
-        st.plotly_chart(
-            grafico_faixas(resumo_faixa),
-            use_container_width=True,
-            config={
-                "displaylogo": False,
-                "responsive": True
-            }
-        )
-
-    with col2:
-
-        st.plotly_chart(
-            grafico_distribuicao(base_rca),
-            use_container_width=True,
-            config={
-                "displaylogo": False,
-                "responsive": True
-            }
-        )
-
-    espaco()
-
-    # ------------------------------------------------------
-    # HEATMAP
-    # ------------------------------------------------------
+    # ======================================================
+    # GRÁFICO PRINCIPAL
+    # ======================================================
 
     st.plotly_chart(
-        grafico_heatmap(base_rca),
+        grafico_supervisor(ranking_super),
         use_container_width=True,
-        config={
-            "displaylogo": False,
-            "responsive": True
-        }
+        key="grafico_supervisores"
     )
 
+    espaco(2)
+
+    # ======================================================
+    # INDICADORES
+    # ======================================================
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+
+        indicador_simples(
+            "Total de Supervisores",
+            kpis["supervisores"]
+        )
+
+    with col2:
+
+        indicador_simples(
+            "RCAs",
+            kpis["rcas"]
+        )
+
+    with col3:
+
+        indicador_simples(
+            "RCAs com Penalidade",
+            kpis["rcas_penalidade"]
+        )
+
+    espaco(2)
+
+    # ======================================================
+    # TABELA DOS SUPERVISORES
+    # ======================================================
+
+    titulo_tabela("Resumo por Supervisor")
+
+    tabela_supervisor = ranking_super.copy()
+
+    st.dataframe(
+        tabela_supervisor,
+        use_container_width=True,
+        height=420
+    )
+
+    espaco()
+
+    observacao(
+        """
+        Esta visão consolida os resultados por supervisor,
+        permitindo identificar rapidamente quais equipes
+        apresentam maior impacto financeiro com penalidades.
+        """
+    )
 # ==========================================================
 # ABA 4 - TABELAS
 # ==========================================================
@@ -531,38 +516,62 @@ with aba_tabelas:
 
     cabecalho_secao(
         "📋 Tabelas Analíticas",
-        "Consultas detalhadas para análise dos indicadores."
+        "Consulta detalhada das informações utilizadas pelo Dashboard."
     )
 
     espaco()
 
-    tab1, tab2 = st.tabs([
-        "📊 Analítica",
-        "💰 Financeiro"
-    ])
+    tab1, tab2, tab3 = st.tabs(
+        [
+            "📊 Analítica",
+            "💰 Financeiro",
+            "🎯 Acima da Meta"
+        ]
+    )
 
     # ------------------------------------------------------
-    # TABELA ANALÍTICA
+    # ANALÍTICA
     # ------------------------------------------------------
 
     with tab1:
 
+        titulo_tabela("Tabela Analítica")
+
         st.dataframe(
-            analitico,
+            tabela_geral,
             use_container_width=True,
-            height=650
+            height=600,
+            key="tbl_analitica"
         )
 
     # ------------------------------------------------------
-    # TABELA FINANCEIRO
+    # FINANCEIRO
     # ------------------------------------------------------
 
     with tab2:
 
+        titulo_tabela("Tabela Financeira")
+
         st.dataframe(
-            descontos,
+            tabela_financeira,
             use_container_width=True,
-            height=650
+            height=600,
+            key="tbl_financeiro"
+        )
+
+    # ------------------------------------------------------
+    # ACIMA DA META
+    # ------------------------------------------------------
+
+    with tab3:
+
+        titulo_tabela("RCAs Acima da Meta")
+
+        st.dataframe(
+            tabela_meta,
+            use_container_width=True,
+            height=600,
+            key="tbl_meta"
         )
 
 # ==========================================================
@@ -573,42 +582,48 @@ with aba_exportacao:
 
     cabecalho_secao(
         "📤 Exportação",
-        "Exportação das informações do Dashboard."
+        "Exportação dos dados apresentados no Dashboard."
     )
 
     espaco()
 
-    col1, col2 = st.columns([2,1])
+    col1, col2 = st.columns([2, 1])
 
     with col1:
 
-        observacao("""
-Utilize este botão para exportar a relação dos vendedores
-com penalidades financeiras para Excel.
+        observacao(
+            """
+Os arquivos exportados respeitam todos os filtros aplicados no Dashboard.
 
-O arquivo respeita todos os filtros aplicados no Dashboard.
-""")
+Você poderá utilizar estas informações para auditorias, reuniões,
+envio para gestores ou análises complementares.
+"""
+        )
 
         espaco()
 
         botao_download_excel(
-            "Penalidades.xlsx",
+            "Dashboard_Penalidades.xlsx",
             arquivo_excel.getvalue()
         )
 
     with col2:
 
-        st.metric(
+        badge("Dashboard Executivo")
+
+        espaco()
+
+        indicador_simples(
             "RCAs",
             kpis["rcas"]
         )
 
-        st.metric(
+        indicador_simples(
             "Supervisores",
             kpis["supervisores"]
         )
 
-        st.metric(
+        indicador_simples(
             "RCAs Penalizados",
             kpis["rcas_penalidade"]
         )
@@ -622,3 +637,4 @@ espaco(2)
 linha()
 
 rodape_dashboard()
+

@@ -21,14 +21,15 @@ def titulo_principal():
     st.markdown("""
     <div style="margin-bottom:8px;">
 
-        <h1 style="
-            color:white;
-            margin-bottom:0px;
-            font-size:40px;
-            font-weight:700;
-        ">
-            💸 Dashboard Executivo de Penalidades
-        </h1>
+<h1 style="
+color:white;
+margin-bottom:0px;
+font-size:40px;
+font-weight:700;
+">
+    
+💸 Dashboard Executivo de Penalidades
+</h1>
 
         <span style="
             color:#A7B7C7;
